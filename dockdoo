@@ -1,0 +1,38 @@
+#!/bin/bash
+#You need create the enviroment variable CLIENT with the project's name
+version="10"
+
+if [ $1 == 'prod' ] ; then
+  if [ $2 == 'up' ] ; then
+      cd /$CLIENT-$version && docker-compose -f prod.yaml up --build --remove-orphans -d
+  elif [ $2 == 'down' ] ; then
+      cd /$CLIENT-$version && docker-compose down
+  elif [ $2 == 'restart' ] ; then
+      cd /$CLIENT-$version && docker-compose -f prod.yaml restart odoo
+  elif [ $2 == 'rebuild' ] ; then
+      cd /$CLIENT-$version && docker-compose down && docker-compose -f prod.yaml build --no-cache && docker-compose -f prod.yaml up --build --remove-orphans -d
+  elif [ $2 == 'update' ] ; then
+      cd /$CLIENT-$version && docker-compose run --rm odoo odoo -u $3 --stop-after-init
+  else
+      echo "Allowed params: [clean]|[(test|prod) (start|stop|restart|rebuild)][update addon1,addon2]"
+  fi
+elif [ $1 == 'test' ] ; then
+  if [ $2 == 'up' ] ; then
+      cd /test-$CLIENT-$version && docker-compose -f test.yaml up --build --remove-orphans -d
+  elif [ $2 == 'down' ] ; then
+      cd /test-$CLIENT-$version && docker-compose down
+  elif [ $2 == 'restart' ] ; then
+      cd /test-$CLIENT-$version && docker-compose -f test.yaml restart odoo
+  elif [ $2 == 'rebuild' ] ; then
+      cd /test-$CLIENT-$version && docker-compose down && docker-compose -f test.yaml build --no-cache && docker-compose -f test.yaml up --build --remove-orphans -d
+  elif [ $2 == 'update' ] ; then
+      cd /$CLIENT-$version && docker-compose run --rm odoo odoo -u $3 --stop-after-init
+  else
+      echo "Allowed params: [clean]|[(test|prod) (start|stop|restart|rebuild)][update addon1,addon2]"
+  fi
+elif [ $1 == 'clean' ] ; then
+  docker system prune
+else
+  echo "Allowed params: [clean]|[(test|prod) (start|stop|restart|rebuild)][update addon1,addon2]"
+fi
+
