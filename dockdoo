@@ -14,7 +14,7 @@ if [ $1 == 'prod' ] ; then
   elif [ $2 == 'update' ] ; then
       cd /$CLIENT-$version && docker-compose run --rm odoo odoo -u $3 --stop-after-init
   else
-      echo "Allowed params: [clean]|[(test|prod) (start|stop|restart|rebuild)][update addon1,addon2]"
+      echo "Allowed params: [clean]|[(test|prod) (up|down|restart|rebuild)][update addon1,addon2]"
   fi
 elif [ $1 == 'test' ] ; then
   if [ $2 == 'up' ] ; then
@@ -28,11 +28,10 @@ elif [ $1 == 'test' ] ; then
   elif [ $2 == 'update' ] ; then
       cd /$CLIENT-$version && docker-compose run --rm odoo odoo -u $3 --stop-after-init
   else
-      echo "Allowed params: [clean]|[(test|prod) (start|stop|restart|rebuild)][update addon1,addon2]"
+      echo "Allowed params: [clean]|[(test|prod) (up|down|restart|rebuild)][update addon1,addon2]"
   fi
 elif [ $1 == 'clean' ] ; then
   docker system prune
 else
-  echo "Allowed params: [clean]|[(test|prod) (start|stop|restart|rebuild)][update addon1,addon2]"
+  echo "Allowed params: [clean]|[(test|prod) (up|down|restart|rebuild)][update addon1,addon2]"
 fi
-

@@ -1,0 +1,49 @@
+#!/bin/bash
+version="10" #TODO - custom version in .env and odoo/Dockerfile
+gituser="" #Git username, NO login mail
+gitpwd=""
+urlprod=""
+urltest=""
+#IMPORTANT: You must create the repo docker in github with de client name (subdomain production instance), and set CLIENT env variable in server with the client repo name
+
+#INSTALL GIT
+apt-get install -y git
+
+#INSTALL DOCKER
+apt-get update
+apt-get install -y \
+     apt-transport-https \
+     ca-certificates \
+     curl \
+     gnupg2 \
+     software-properties-common
+curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "$ID")/gpg | sudo apt-key add -
+apt-key fingerprint 0EBFCD88
+add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") \
+   $(lsb_release -cs) \
+   stable"
+apt-get update
+apt-get -y install docker-ce
+
+#INSTALL DOCKER-COMPOSE
+sudo curl -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+#Dockdoo Script
+git clone -b master https://github.com/dockdoo/dockdoo.git /dockdoo
+ln -s /dockdoo/dockdoo /bin/dockdoo && chmod u+x /dockdoo/dockdoo 
+
+#traefik
+git clone -b master https://github.com/dockdoo/traefik.git /traefik
+cd /traefik && docker-compose -p inverseproxy -f inverseproxy.yaml up -d
+
+#SCAFFOLDING-prod
+git clone -b $version.0 https://$gituser:$gitpwd@github.com/dockdoo/$CLIENT.git /$CLIENT-$version
+cd /$CLIENT-$version
+ln -s prod.yaml docker-compose.yml && docker-compose -f prod.yaml up --build --remove-orphans -d
+
+#SCAFFOLDING-test
+git clone -b $version.0 https://$gituser:$gitpwd@github.com/dockdoo/$CLIENT.git /test-$CLIENT-$version
+cd /test-$CLIENT-$version
+ln -s test.yaml docker-compose.yml && docker-compose -f test.yaml up --build -d
