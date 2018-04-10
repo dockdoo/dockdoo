@@ -26,7 +26,7 @@ elif [ $1 == 'test' ] ; then
   elif [ $2 == 'rebuild' ] ; then
       cd /test-$CLIENT-$version && docker-compose down && docker-compose -f test.yaml build --no-cache && docker-compose -f test.yaml up --build --remove-orphans -d
   elif [ $2 == 'update' ] ; then
-      cd /$CLIENT-$version && docker-compose run --rm odoo odoo -u $3 --stop-after-init
+      cd /test-$CLIENT-$version && docker-compose run --rm odoo odoo -u $3 --stop-after-init
   else
       echo "Allowed params: [clean]|[(test|prod) (up|down|restart|rebuild)][update addon1,addon2]"
   fi
