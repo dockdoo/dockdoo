@@ -18,7 +18,7 @@ Image (Doodba) use (test|prod)
    -t	Maintenance task to be executed: (up|down|restart|rebuild)
    -u	Update addons. For updating more than one addon at once use \
 the addon name separated by a comma: -u addon1,addon2
-   -c Remove unused data. This is equivalent to a docker system prune.
+   -c   Remove unused data. This is equivalent to a docker system prune.
 EOF
 }
 
@@ -57,6 +57,12 @@ do
 			;;
 	esac
 done
+
+if [ $OPTIND -eq 1 ]
+then
+	usage
+	exit 1
+fi
 
 # check prefix for testing environments
 if [ $DATABASE == "test" ]
