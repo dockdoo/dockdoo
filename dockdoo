@@ -1,37 +1,88 @@
 #!/bin/bash
+
 #You need create the enviroment variable CLIENT with the project's name
 version="10"
 
-if [ $1 == 'prod' ] ; then
-  if [ $2 == 'up' ] ; then
-      cd /$CLIENT-$version && docker-compose -f prod.yaml up --build --remove-orphans -d
-  elif [ $2 == 'down' ] ; then
-      cd /$CLIENT-$version && docker-compose down
-  elif [ $2 == 'restart' ] ; then
-      cd /$CLIENT-$version && docker-compose -f prod.yaml restart odoo
-  elif [ $2 == 'rebuild' ] ; then
-      cd /$CLIENT-$version && docker-compose down && docker-compose -f prod.yaml build --no-cache && docker-compose -f prod.yaml up --build --remove-orphans -d
-  elif [ $2 == 'update' ] ; then
-      cd /$CLIENT-$version && docker-compose run --rm odoo odoo -u $3 --stop-after-init
-  else
-      echo "Allowed params: [clean]|[(test|prod) (up|down|restart|rebuild)][update addon1,addon2]"
-  fi
-elif [ $1 == 'test' ] ; then
-  if [ $2 == 'up' ] ; then
-      cd /test-$CLIENT-$version && docker-compose -f test.yaml up --build --remove-orphans -d
-  elif [ $2 == 'down' ] ; then
-      cd /test-$CLIENT-$version && docker-compose down
-  elif [ $2 == 'restart' ] ; then
-      cd /test-$CLIENT-$version && docker-compose -f test.yaml restart odoo
-  elif [ $2 == 'rebuild' ] ; then
-      cd /test-$CLIENT-$version && docker-compose down && docker-compose -f test.yaml build --no-cache && docker-compose -f test.yaml up --build --remove-orphans -d
-  elif [ $2 == 'update' ] ; then
-      cd /test-$CLIENT-$version && docker-compose run --rm odoo odoo -u $3 --stop-after-init
-  else
-      echo "Allowed params: [clean]|[(test|prod) (up|down|restart|rebuild)][update addon1,addon2]"
-  fi
-elif [ $1 == 'clean' ] ; then
-  docker system prune
-else
-  echo "Allowed params: [clean]|[(test|prod) (up|down|restart|rebuild)][update addon1,addon2]"
+# http://rsalveti.wordpress.com/2007/04/03/bash-parsing-arguments-with-getopts/
+usage()
+{
+cat << EOF
+This script run basic maintenance tasks for Odoo docker instances.
+
+SYNOPSIS
+	dockdoo [[-d database [-t task |-u addons]]|[-c]
+
+COMMAND-LINE OPTIONS:
+   -d	Database name used in the instance. For a Dockerized Odoo Base \
+Image (Doodba) use (test|prod)
+   -t	Maintenance task to be executed: (up|down|restart|rebuild)
+   -u	Update addons. For updating more than one addon at once use \
+the addon name separated by a comma: -u addon1,addon2
+   -c Remove unused data. This is equivalent to a docker system prune.
+EOF
+}
+
+# directory prefix 
+PREFIX=
+# database name
+DATABASE=
+# task to be done
+TASK=
+# addons to be updated
+ADDONS=
+
+# NOTE: This requires GNU getopt. On Mac OS X and FreeBSD, you have to
+# install this separately; see below.
+
+# parse for arguments
+while getopts "d:t:u:ch" OPTION
+do
+	case $OPTION in
+		d)
+			DATABASE=$OPTARG
+			;;
+		t)
+			TASK=$OPTARG
+			;;
+		u)
+			TASK='update'
+			ADDONS=$OPTARG
+			;;
+		c)
+			TASK='clean'
+			;;
+		h | *)
+			usage
+			exit 1
+			;;
+	esac
+done
+
+# check prefix for testing environments
+if [ $DATABASE == "test" ]
+then
+    PREFIX="test-"
 fi
+
+# do the work
+case $TASK in
+	"up")
+		cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
+		;;
+	"down")
+		cd /$PREFIX$CLIENT-$version && docker-compose down
+		;;
+	"restart")
+		cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml restart odoo
+		;;
+	"rebuild")
+		cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml build --no-cache && docker-compose down && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
+		;;
+	"update")
+		cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -u $ADDONS --stop-after-init
+		;;
+	"clean")
+		docker system prune
+		;;
+esac
+
