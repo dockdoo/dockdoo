@@ -1,10 +1,60 @@
 #!/bin/bash
-version="10" #TODO - custom version in .env and odoo/Dockerfile
-gituser="" #Git username, NO login mail
-gitpwd=""
-urlprod=""
-urltest=""
-#IMPORTANT: You must create the repo docker in github with de client name (subdomain production instance), and set CLIENT env variable in server with the client repo name
+
+usage()
+{
+cat << EOF
+All parameters are obligatory
+SYNOPSIS
+	dockdoo-install [[-t token -v version -o organization -c client ]]
+COMMAND-LINE OPTIONS:
+   -t	Token used on github 
+   -v	Odoo version
+   -o	Organization 
+   -c   Client
+EOF
+}
+
+TOKEN=
+VERSION=
+ORGANIZATION=
+CLIENT=
+
+
+while getopts "t:v:o:c:h" OPTION
+do
+	case $OPTION in
+		t)
+			TOKEN=$OPTARG
+			;;
+		v)
+			VERSION=$OPTARG
+			;;
+		o)
+			ORGANIZATION=$OPTARG
+			;;
+		c)
+			CLIENT=$OPTARG
+			;;
+		h | *)
+			usage
+			exit 1
+			;;
+	esac
+done
+
+if [ $OPTIND -eq 1 ]
+then
+	usage
+	exit 1
+fi
+
+if [ "$TOKEN" = "" ] || [ "$VERSION" = "" ] || [ "$ORGANIZATION" = "" ] || [ "$CLIENT" = "" ] 
+then
+        usage
+        exit 1
+fi
+ 
+
 
 #INSTALL GIT
 apt-get install -y git
