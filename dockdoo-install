@@ -55,7 +55,6 @@ then
 fi
  
 
-
 #INSTALL GIT
 apt-get install -y git
 
@@ -81,19 +80,19 @@ sudo curl -L https://github.com/docker/compose/releases/download/1.19.0/docker-c
 sudo chmod +x /usr/local/bin/docker-compose
 
 #Dockdoo Script
-git clone -b master https://github.com/dockdoo/dockdoo.git /dockdoo
+git clone -b master https://github.com/$ORGANIZATION/dockdoo.git /dockdoo
 ln -s /dockdoo/dockdoo /bin/dockdoo && chmod u+x /dockdoo/dockdoo 
 
 #traefik
-git clone -b master https://github.com/dockdoo/traefik.git /traefik
+git clone -b master https://github.com/$ORGANIZATION/traefik.git /traefik
 cd /traefik && docker-compose -p inverseproxy -f inverseproxy.yaml up -d
 
 #SCAFFOLDING-prod
-git clone -b $version.0 https://$gituser:$gitpwd@github.com/dockdoo/$CLIENT.git /$CLIENT-$version
-cd /$CLIENT-$version
+git clone -b $VERSION.0 https://$TOKEN@github.com/$ORGANIZATION/$CLIENT.git /$CLIENT-$VERSION
+cd /$CLIENT-$VERSION
 ln -s prod.yaml docker-compose.yml && docker-compose -f prod.yaml up --build --remove-orphans -d
 
 #SCAFFOLDING-test
-git clone -b $version.0 https://$gituser:$gitpwd@github.com/dockdoo/$CLIENT.git /test-$CLIENT-$version
-cd /test-$CLIENT-$version
+git clone -b $VERSION.0 https://$TOKEN@github.com/$ORGANIZATION/$CLIENT.git /test-$CLIENT-$VERSION
+cd /test-$CLIENT-$VERSION
 ln -s test.yaml docker-compose.yml && docker-compose -f test.yaml up --build -d
