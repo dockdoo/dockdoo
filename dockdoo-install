@@ -53,6 +53,9 @@ then
         usage
         exit 1
 fi
+
+#AUTOMATICALLY ADD VARIABLE $CLIENT
+sed -i '1i export CLIENT=''"'$CLIENT'"' ~/.bashrc
  
 
 #INSTALL GIT
