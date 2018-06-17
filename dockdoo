@@ -91,7 +91,7 @@ case $TASK in
 		cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml build --no-cache && docker-compose down && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
 		;;
 	"install")
-		cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -u $ADDONS --stop-after-init
+		cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -i $ADDONS --stop-after-init
 		;;
 	"update")
 		cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -u $ADDONS --stop-after-init
