@@ -16,8 +16,10 @@ COMMAND-LINE OPTIONS:
    -d	Database name used in the instance. For a Dockerized Odoo Base \
 Image (Doodba) use (test|prod)
    -t	Maintenance task to be executed: (up|down|restart|rebuild)
+   -i   Install addons. For installing more than one addon at once use \
+the addon name separated by a comma: -i addon1,addon2, ...
    -u	Update addons. For updating more than one addon at once use \
-the addon name separated by a comma: -u addon1,addon2
+the addon name separated by a comma: -u addon1,addon2, ...
    -c   Remove unused data. This is equivalent to a docker system prune.
 EOF
 }
@@ -35,7 +37,7 @@ ADDONS=
 # install this separately; see below.
 
 # parse for arguments
-while getopts "d:t:u:ch" OPTION
+while getopts "d:t:i:u:ch" OPTION
 do
 	case $OPTION in
 		d)
@@ -43,6 +45,10 @@ do
 			;;
 		t)
 			TASK=$OPTARG
+			;;
+		i)
+			TASK='install'
+			ADDONS=$OPTARG
 			;;
 		u)
 			TASK='update'
@@ -83,6 +89,9 @@ case $TASK in
 		;;
 	"rebuild")
 		cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml build --no-cache && docker-compose down && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
+		;;
+	"install")
+		cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -u $ADDONS --stop-after-init
 		;;
 	"update")
 		cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -u $ADDONS --stop-after-init
