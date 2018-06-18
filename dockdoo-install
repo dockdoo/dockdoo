@@ -55,8 +55,8 @@ then
 fi
 
 #AUTOMATICALLY ADD VARIABLE $CLIENT
-sed -i '1i export CLIENT=''"'$CLIENT'"' ~/.bashrc
- 
+echo "# Used by dockdoo" >> ~/.bashrc
+echo 'export CLIENT=''"'$CLIENT'"' >> ~/.bashrc 
 
 #INSTALL GIT
 apt-get install -y git
