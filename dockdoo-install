@@ -1,10 +1,62 @@
 #!/bin/bash
-version="10" #TODO - custom version in .env and odoo/Dockerfile
-gituser="" #Git username, NO login mail
-gitpwd=""
-urlprod=""
-urltest=""
-#IMPORTANT: You must create the repo docker in github with de client name (subdomain production instance), and set CLIENT env variable in server with the client repo name
+
+usage()
+{
+cat << EOF
+All parameters are obligatory
+SYNOPSIS
+	dockdoo-install [[-t token -v version -o organization -c client ]]
+COMMAND-LINE OPTIONS:
+   -t	Token used on github 
+   -v	Odoo version
+   -o	Organization 
+   -c   Client
+EOF
+}
+
+TOKEN=
+VERSION=
+ORGANIZATION=
+CLIENT=
+
+
+while getopts "t:v:o:c:h" OPTION
+do
+	case $OPTION in
+		t)
+			TOKEN=$OPTARG
+			;;
+		v)
+			VERSION=$OPTARG
+			;;
+		o)
+			ORGANIZATION=$OPTARG
+			;;
+		c)
+			CLIENT=$OPTARG
+			;;
+		h | *)
+			usage
+			exit 1
+			;;
+	esac
+done
+
+if [ $OPTIND -eq 1 ]
+then
+	usage
+	exit 1
+fi
+
+if [ "$TOKEN" = "" ] || [ "$VERSION" = "" ] || [ "$ORGANIZATION" = "" ] || [ "$CLIENT" = "" ] 
+then
+        usage
+        exit 1
+fi
+
+#AUTOMATICALLY ADD VARIABLE $CLIENT
+echo "# Used by dockdoo" >> ~/.bashrc
+echo 'export CLIENT=''"'$CLIENT'"' >> ~/.bashrc 
 
 #INSTALL GIT
 apt-get install -y git
@@ -31,19 +83,19 @@ sudo curl -L https://github.com/docker/compose/releases/download/1.19.0/docker-c
 sudo chmod +x /usr/local/bin/docker-compose
 
 #Dockdoo Script
-git clone -b master https://github.com/dockdoo/dockdoo.git /dockdoo
+git clone -b master https://github.com/$ORGANIZATION/dockdoo.git /dockdoo
 ln -s /dockdoo/dockdoo /bin/dockdoo && chmod u+x /dockdoo/dockdoo 
 
 #traefik
-git clone -b master https://github.com/dockdoo/traefik.git /traefik
+git clone -b master https://github.com/$ORGANIZATION/traefik.git /traefik
 cd /traefik && docker-compose -p inverseproxy -f inverseproxy.yaml up -d
 
 #SCAFFOLDING-prod
-git clone -b $version.0 https://$gituser:$gitpwd@github.com/dockdoo/$CLIENT.git /$CLIENT-$version
-cd /$CLIENT-$version
+git clone -b $VERSION.0 https://$TOKEN@github.com/$ORGANIZATION/$CLIENT.git /$CLIENT-$VERSION
+cd /$CLIENT-$VERSION
 ln -s prod.yaml docker-compose.yml && docker-compose -f prod.yaml up --build --remove-orphans -d
 
 #SCAFFOLDING-test
-git clone -b $version.0 https://$gituser:$gitpwd@github.com/dockdoo/$CLIENT.git /test-$CLIENT-$version
-cd /test-$CLIENT-$version
+git clone -b $VERSION.0 https://$TOKEN@github.com/$ORGANIZATION/$CLIENT.git /test-$CLIENT-$VERSION
+cd /test-$CLIENT-$VERSION
 ln -s test.yaml docker-compose.yml && docker-compose -f test.yaml up --build -d
