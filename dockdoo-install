@@ -5,12 +5,14 @@ usage()
 cat << EOF
 All parameters are obligatory
 SYNOPSIS
-	dockdoo-install [[-t token -v version -o organization -c client ]]
+	dockdoo-install [[-t token -v version -o organization -c client [-i client_ip -s server_icinga_ip] ]]
 COMMAND-LINE OPTIONS:
    -t	Token used on github 
    -v	Odoo version
    -o	Organization 
    -c   Client
+   -i	Client IP
+   -s	Icinga server IP
 EOF
 }
 
@@ -18,9 +20,10 @@ TOKEN=
 VERSION=
 ORGANIZATION=
 CLIENT=
+CLIENT_IP=
+SERVER_ICINGA_IP=
 
-
-while getopts "t:v:o:c:h" OPTION
+while getopts "t:v:o:c:i:s:h" OPTION
 do
 	case $OPTION in
 		t)
@@ -35,6 +38,13 @@ do
 		c)
 			CLIENT=$OPTARG
 			;;
+                i)
+                        CLIENT_IP=$OPTARG
+                        ;;
+                s)
+                        SERVER_ICINGA_IP=$OPTARG
+                        ;;
+
 		h | *)
 			usage
 			exit 1
@@ -57,7 +67,7 @@ fi
 #AUTOMATICALLY ADD VARIABLE $CLIENT
 echo "# Used by dockdoo" >> ~/.bashrc
 echo 'export CLIENT=''"'$CLIENT'"' >> ~/.bashrc 
-
+source ~/.bashrc
 #INSTALL GIT
 apt-get install -y git
 
@@ -99,3 +109,24 @@ ln -s prod.yaml docker-compose.yml && docker-compose -f prod.yaml up --build --r
 git clone -b $VERSION.0 https://$TOKEN@github.com/$ORGANIZATION/$CLIENT.git /test-$CLIENT-$VERSION
 cd /test-$CLIENT-$VERSION
 ln -s test.yaml docker-compose.yml && docker-compose -f test.yaml up --build -d
+
+
+#INSTALL AND CONFIGURE ICINGA2 [OPTIONAL]
+if [ -n $CLIENT_IP ]
+then
+
+apt -y --force-yes install icinga2 software-properties-common sshpass
+read -p "Introduce la contraseña del servidor Iciga: " -s pass
+git clone https://github.com/$ORGANIZATION/Icinga.git /icinga
+cd /icinga
+sed  's/$CLIENT_IP/'$CLIENT_IP'/' plantilla_nodo.conf > $CLIENT.conf
+sed -i 's/$CLIENT/'$CLIENT'/' $CLIENT.conf
+
+sshpass -p $pass scp $CLIENT.conf root@$SERVER_ICINGA_IP:/etc/icinga2/conf.d/$ORGANIZATION.d/
+
+sshpass -p $pass scp root@$SERVER_ICINGA_IP:/var/lib/nagios/.ssh/id_rsa.pub /root/.ssh/authorized_keys
+
+service icinga2 reload
+sshpass -p $pass ssh $SERVER_ICINGA_IP service icinga2 reload
+
+fi
