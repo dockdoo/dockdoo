@@ -156,7 +156,7 @@ ln -s test.yaml docker-compose.yml && docker-compose -f test.yaml up --build -d
 
 
 #INSTALL AND CONFIGURE ICINGA2 [OPTIONAL]
-if [ -n $CLIENT_IP ]
+if [ "$CLIENT_IP" != "" ]
 then
 
 apt -y --force-yes install icinga2 software-properties-common sshpass
