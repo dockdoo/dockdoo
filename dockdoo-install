@@ -1,16 +1,20 @@
-#!/bin/bash
+#!/bin/bash -x
 
 usage()
 {
 cat << EOF
 All parameters are obligatory
 SYNOPSIS
-	dockdoo-install [[-t token -v version -o organization -c client ]]
+	dockdoo-install [[-t token -v version -o organization -c client -r repository -b branch [-i client_ip -s server_icinga_ip] ]]
 COMMAND-LINE OPTIONS:
    -t	Token used on github 
    -v	Odoo version
    -o	Organization 
    -c   Client
+   -r   Repository
+   -b   Branch
+   -i	Client IP
+   -s	Icinga server IP
 EOF
 }
 
@@ -18,9 +22,11 @@ TOKEN=
 VERSION=
 ORGANIZATION=
 CLIENT=
-
-
-while getopts "t:v:o:c:h" OPTION
+REPO=
+BRANCH=
+CLIENT_IP=
+SERVER_ICINGA_IP=
+while getopts "t:v:o:c:r:b:i:s:h" OPTION
 do
 	case $OPTION in
 		t)
@@ -35,6 +41,18 @@ do
 		c)
 			CLIENT=$OPTARG
 			;;
+                r)
+                        REPO=$OPTARG
+                        ;;
+                b)
+                        BRANCH=$OPTARG
+                        ;;
+		i)
+                        CLIENT_IP=$OPTARG
+                        ;;
+                s)
+                        SERVER_ICINGA_IP=$OPTARG
+                        ;;
 		h | *)
 			usage
 			exit 1
@@ -48,7 +66,7 @@ then
 	exit 1
 fi
 
-if [ "$TOKEN" = "" ] || [ "$VERSION" = "" ] || [ "$ORGANIZATION" = "" ] || [ "$CLIENT" = "" ] 
+if [ "$TOKEN" = "" ] || [ "$VERSION" = "" ] || [ "$ORGANIZATION" = "" ] || [ "$CLIENT" = "" ] || [ "$REPO" = "" ] 
 then
         usage
         exit 1
@@ -57,6 +75,44 @@ fi
 #AUTOMATICALLY ADD VARIABLE $CLIENT
 echo "# Used by dockdoo" >> ~/.bashrc
 echo 'export CLIENT=''"'$CLIENT'"' >> ~/.bashrc 
+source ~/.bashrc
+
+#AMAZON
+apt -y --force-yes install awscli
+cd /
+git clone https://$TOKEN@github.com/$ORGANIZATION/.aws
+cd /.aws
+sed -i 's/$CLIENT/'$CLIENT'/' plantilla_politica
+aws iam create-user --user-name backup.$CLIENT
+aws iam create-access-key --user-name backup.$CLIENT>Access_Key
+aws iam create-policy --policy-name s3-$CLIENT --policy-document file://plantilla_politica>Arn_policy
+secret_access_key=`grep SecretAccessKey Access_Key |cut -d : -f2 |sed 's/"/ /g' |sed 's/,/ /g'|sed 's/^[ \t]*//'`
+access_key=`grep AccessKeyId Access_Key |cut -d : -f2 |sed 's/"/ /g' |sed 's/,/ /g'|sed 's/^[ \t]*//'`
+arn=`grep arn Arn_policy|cut -d " " -f10 |sed 's/"/ /g' |sed 's/,/ /g'|sed 's/^[ \t]*//'`
+echo $arn
+aws iam attach-user-policy --user-name backup.$CLIENT --policy-arn $arn
+
+#GITHUB
+cd /
+git clone -b $BRANCH https://github.com/$ORGANIZATION/$REPO /$CLIENT
+cd /$CLIENT
+bucket=sdi-odoo/$CLIENT
+sed -i 's/test.example.com/test.'$CLIENT'.sdicloud.es/' .env
+sed -i 's/www.example.com/'$CLIENT'.sdicloud.es/' .env
+sed -i "s/example key/$access_key/" .env
+sed -i "s#example secret#$secret_access_key#" .env
+sed -i 's#example-bkp#'$bucket'#' .env
+sed -i 's/example encryption key/Wwqq2231/' .env
+curl -i -H 'Authorization: token '$TOKEN' ' -d '{"name": ''"'$CLIENT'"'', "private": true}' https://api.github.com/orgs/sdisl/repos
+git init
+git add .
+git remote rename origin upstream
+git remote add origin https://github.com/$ORGANIZATION/$CLIENT.git
+git commit -m "[ADD]Scaffolding"
+git branch $VERSION.0
+git push https://$TOKEN@github.com/$ORGANIZATION/$CLIENT.git $VERSION.0
+
+rm -r /$CLIENT
 
 #INSTALL GIT
 apt-get install -y git
@@ -82,9 +138,7 @@ apt-get -y install docker-ce
 sudo curl -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 
-#Dockdoo Script
-git clone -b master https://github.com/$ORGANIZATION/dockdoo.git /dockdoo
-ln -s /dockdoo/dockdoo /bin/dockdoo && chmod u+x /dockdoo/dockdoo 
+cd /
 
 #traefik
 git clone -b master https://github.com/$ORGANIZATION/traefik.git /traefik
@@ -99,3 +153,24 @@ ln -s prod.yaml docker-compose.yml && docker-compose -f prod.yaml up --build --r
 git clone -b $VERSION.0 https://$TOKEN@github.com/$ORGANIZATION/$CLIENT.git /test-$CLIENT-$VERSION
 cd /test-$CLIENT-$VERSION
 ln -s test.yaml docker-compose.yml && docker-compose -f test.yaml up --build -d
+
+
+#INSTALL AND CONFIGURE ICINGA2 [OPTIONAL]
+if [ -n $CLIENT_IP ]
+then
+
+apt -y --force-yes install icinga2 software-properties-common sshpass
+read -p "Introduce la contraseña del servidor Iciga: " -s pass
+git clone https://github.com/$ORGANIZATION/Icinga.git /icinga
+cd /icinga
+sed  's/$CLIENT_IP/'$CLIENT_IP'/' plantilla_nodo.conf > $CLIENT.conf
+sed -i 's/$CLIENT/'$CLIENT'/' $CLIENT.conf
+
+sshpass -p $pass scp $CLIENT.conf root@$SERVER_ICINGA_IP:/etc/icinga2/conf.d/$ORGANIZATION.d/
+
+sshpass -p $pass scp root@$SERVER_ICINGA_IP:/var/lib/nagios/.ssh/id_rsa.pub /root/.ssh/authorized_keys
+
+service icinga2 reload
+sshpass -p $pass ssh $SERVER_ICINGA_IP service icinga2 reload
+
+fi
