@@ -10,17 +10,16 @@ cat << EOF
 This script run basic maintenance tasks for Odoo docker instances.
 
 SYNOPSIS
-	dockdoo [[-d database [-t task |-u addons]]|[-c]
+	dockdoo [-d database [-t task |-u addons |-i addons]]
 
 COMMAND-LINE OPTIONS:
    -d	Database name used in the instance. For a Dockerized Odoo Base \
 Image (Doodba) use (test|prod)
-   -t	Maintenance task to be executed: (up|down|restart|rebuild)
+   -t	Maintenance task to be executed: (up|down|restart|rebuild|prune)
    -i   Install addons. For installing more than one addon at once use \
 the addon name separated by a comma: -i addon1,addon2, ...
    -u	Update addons. For updating more than one addon at once use \
 the addon name separated by a comma: -u addon1,addon2, ...
-   -c   Remove unused data. This is equivalent to a docker system prune.
 EOF
 }
 
@@ -53,9 +52,6 @@ do
 		u)
 			TASK='update'
 			ADDONS=$OPTARG
-			;;
-		c)
-			TASK='clean'
 			;;
 		h | *)
 			usage
@@ -96,8 +92,8 @@ case $TASK in
 	"update")
 		cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -u $ADDONS --stop-after-init
 		;;
-	"clean")
-		docker system prune
+	"prune")
+		echo "docker system prune"
 		;;
 esac
 
