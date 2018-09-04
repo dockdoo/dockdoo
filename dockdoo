@@ -109,7 +109,6 @@ case $TASK in
         semverParse "$docker_version"
         # In Docker 17.06.0 and earlier, volumes are also pruned!
         if [ "$major" -le "$MAJOR_CHECK" ] && [ "$minor" -le "$MINOR_CHECK" ] && [ "$patch" -le "$PATCH_CHECK" ]; then
-            echo "here"
             docker container prune --force; docker network prune --force; docker image prune --force
 		else
     		docker system prune --force
