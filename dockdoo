@@ -72,6 +72,15 @@ then
     PREFIX="test-"
 fi
 
+# taken from https://get.docker.com/
+semverParse() {
+	major="${1%%.*}"
+	minor="${1#$major.}"
+	minor="${minor%%.*}"
+	patch="${1#$major.$minor.}"
+	patch="${patch%%[-.]*}"
+}
+
 # do the work
 case $TASK in
 	"up")
@@ -93,7 +102,18 @@ case $TASK in
 		cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -u $ADDONS --stop-after-init
 		;;
 	"prune")
-		echo "docker system prune"
+        docker_version="$(docker -v | cut -d ' ' -f3 | cut -d ',' -f1)"
+        MAJOR_CHECK=17
+		MINOR_CHECK=06
+		PATCH_CHECK=0
+        semverParse "$docker_version"
+        # In Docker 17.06.0 and earlier, volumes are also pruned!
+        if [ "$major" -le "$MAJOR_CHECK" ] && [ "$minor" -le "$MINOR_CHECK" ] && [ "$patch" -le "$PATCH_CHECK" ]; then
+            echo "here"
+            docker container prune --force; docker network prune --force; docker image prune --force
+		else
+    		docker system prune --force
+        fi
 		;;
 esac
 
