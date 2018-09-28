@@ -10,15 +10,15 @@ cat << EOF
 This script run basic maintenance tasks for Odoo docker instances.
 
 SYNOPSIS
-	dockdoo [-d database [-t task |-u addons |-i addons]]
+    dockdoo [-d database [-t task |-u addons |-i addons]]
 
 COMMAND-LINE OPTIONS:
-   -d	Database name used in the instance. For a Dockerized Odoo Base \
+   -d   Database name used in the instance. For a Dockerized Odoo Base \
 Image (Doodba) use (test|prod)
-   -t	Maintenance task to be executed: (up|down|restart|rebuild|prune)
+   -t   Maintenance task to be executed: (up|down|restart|rebuild|prune)
    -i   Install addons. For installing more than one addon at once use \
 the addon name separated by a comma: -i addon1,addon2, ...
-   -u	Update addons. For updating more than one addon at once use \
+   -u   Update addons. For updating more than one addon at once use \
 the addon name separated by a comma: -u addon1,addon2, ...
 EOF
 }
@@ -38,80 +38,81 @@ ADDONS=
 # parse for arguments
 while getopts "d:t:i:u:ch" OPTION
 do
-	case $OPTION in
-		d)
-			DATABASE=$OPTARG
+    case $OPTION in
+        d)
+            DATABASE=$OPTARG
                         # check prefix for testing environments
                         if [ $DATABASE == "test" ]
                         then
                             PREFIX="test-"
                         fi
-			;;
-		t)
-			TASK=$OPTARG
-			;;
-		i)
-			TASK='install'
-			ADDONS=$OPTARG
-			;;
-		u)
-			TASK='update'
-			ADDONS=$OPTARG
-			;;
-		h | *)
-			usage
-			exit 1
-			;;
-	esac
+            ;;
+        t)
+            TASK=$OPTARG
+            ;;
+        i)
+            TASK='install'
+            ADDONS=$OPTARG
+            ;;
+        u)
+            TASK='update'
+            ADDONS=$OPTARG
+            ;;
+        h | *)
+            usage
+            exit 1
+            ;;
+    esac
 done
 
 if [ $OPTIND -eq 1 ]
 then
-	usage
-	exit 1
+    usage
+    exit 1
 fi
 
 # taken from https://get.docker.com/
 semverParse() {
-	major="${1%%.*}"
-	minor="${1#$major.}"
-	minor="${minor%%.*}"
-	patch="${1#$major.$minor.}"
-	patch="${patch%%[-.]*}"
+    major="${1%%.*}"
+    minor="${1#$major.}"
+    minor="${minor%%.*}"
+    patch="${1#$major.$minor.}"
+    patch="${patch%%[-.]*}"
 }
 
 # do the work
 case $TASK in
-	"up")
-		cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
-		;;
-	"down")
-		cd /$PREFIX$CLIENT-$version && docker-compose down
-		;;
-	"restart")
-		cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml restart odoo
-		;;
-	"rebuild")
-		cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml build --no-cache && docker-compose down && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
-		;;
-	"install")
-		cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -i $ADDONS --stop-after-init
-		;;
-	"update")
-		cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -u $ADDONS --stop-after-init
-		;;
-	"prune")
+    "up")
+        cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
+        ;;
+    "down")
+        cd /$PREFIX$CLIENT-$version && docker-compose down
+        ;;
+    "restart")
+        cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml restart odoo
+        ;;
+    "rebuild")
+        cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml build --no-cache && docker-compose down && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
+        ;;
+    "install")
+        cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -i $ADDONS --stop-after-init
+        ;;
+    "update")
+        cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -u $ADDONS --stop-after-init
+        ;;
+    "prune")
         docker_version="$(docker -v | cut -d ' ' -f3 | cut -d ',' -f1)"
         MAJOR_CHECK=17
-		MINOR_CHECK=06
-		PATCH_CHECK=0
+        MINOR_CHECK=06
+        PATCH_CHECK=0
         semverParse "$docker_version"
         # In Docker 17.06.0 and earlier, volumes are also pruned!
         if [ "$major" -le "$MAJOR_CHECK" ] && [ "$minor" -le "$MINOR_CHECK" ] && [ "$patch" -le "$PATCH_CHECK" ]; then
             docker container prune --force; docker network prune --force; docker image prune --force
-		else
-    		docker system prune --force
+        else
+            docker system prune --force
         fi
-		;;
+        ;;
 esac
 
+return 0
