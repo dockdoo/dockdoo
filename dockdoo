@@ -23,7 +23,7 @@ the addon name separated by a comma: -u addon1,addon2, ...
 EOF
 }
 
-# directory prefix 
+# directory prefix
 PREFIX=
 # database name
 DATABASE=
@@ -41,6 +41,11 @@ do
 	case $OPTION in
 		d)
 			DATABASE=$OPTARG
+                        # check prefix for testing environments
+                        if [ $DATABASE == "test" ]
+                        then
+                            PREFIX="test-"
+                        fi
 			;;
 		t)
 			TASK=$OPTARG
@@ -64,12 +69,6 @@ if [ $OPTIND -eq 1 ]
 then
 	usage
 	exit 1
-fi
-
-# check prefix for testing environments
-if [ $DATABASE == "test" ]
-then
-    PREFIX="test-"
 fi
 
 # taken from https://get.docker.com/
