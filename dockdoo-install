@@ -167,11 +167,11 @@ cd /icinga
 sed  's/$CLIENT_IP/'$CLIENT_IP'/' plantilla_nodo.conf > $CLIENT.conf
 sed -i 's/$CLIENT/'$CLIENT'/' $CLIENT.conf
 
-sshpass -p $pass scp $CLIENT.conf root@$SERVER_ICINGA_IP:/etc/icinga2/conf.d/$ORGANIZATION.d/
+sshpass -p $pass scp -o StrictHostKeyChecking=no $CLIENT.conf root@$SERVER_ICINGA_IP:/etc/icinga2/conf.d/$ORGANIZATION.d/
 
-sshpass -p $pass scp root@$SERVER_ICINGA_IP:/var/lib/nagios/.ssh/id_rsa.pub /root/.ssh/authorized_keys
+sshpass -p $pass scp -o StrictHostKeyChecking=no root@$SERVER_ICINGA_IP:/var/lib/nagios/.ssh/id_rsa.pub /root/.ssh/authorized_keys
 
 service icinga2 reload
-sshpass -p $pass ssh $SERVER_ICINGA_IP service icinga2 reload
+sshpass -p $pass ssh -o StrictHostKeyChecking=no $SERVER_ICINGA_IP service icinga2 reload
 
 fi
