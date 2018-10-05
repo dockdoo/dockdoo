@@ -78,10 +78,11 @@ echo 'export CLIENT=''"'$CLIENT'"' >> ~/.bashrc
 source ~/.bashrc
 
 #AMAZON
+apt update
 apt -y --force-yes install awscli
 cd /
-git clone https://$TOKEN@github.com/$ORGANIZATION/.aws
-cd /.aws
+git clone https://$TOKEN@github.com/$ORGANIZATION/.aws ~/.aws
+cd ~/.aws
 sed -i 's/$CLIENT/'$CLIENT'/' plantilla_politica
 aws iam create-user --user-name backup.$CLIENT
 aws iam create-access-key --user-name backup.$CLIENT>Access_Key
