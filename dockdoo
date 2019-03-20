@@ -1,20 +1,17 @@
 #!/bin/bash
 
-#You need create the enviroment variable CLIENT with the project's name
-version="10"
-
 # http://rsalveti.wordpress.com/2007/04/03/bash-parsing-arguments-with-getopts/
 usage()
 {
 cat << EOF
-This script run basic maintenance tasks for Odoo docker instances.
+This script run basic maintenance tasks for Dockerized Odoo Base instances.
 
 SYNOPSIS
-    dockdoo [-d database [-t task |-u addons |-i addons]]
+    dockdoo [-v version -d database [-t task |-u addons |-i addons]]
 
 COMMAND-LINE OPTIONS:
-   -d   Database name used in the instance. For a Dockerized Odoo Base \
-Image (Doodba) use (test|prod)
+   -v   Odoo Major Version (10, 11, 12, ...)
+   -d   Database name used in the instance. 
    -t   Maintenance task to be executed: (up|down|restart|rebuild|prune)
    -i   Install addons. For installing more than one addon at once use \
 the addon name separated by a comma: -i addon1,addon2, ...
@@ -23,6 +20,8 @@ the addon name separated by a comma: -u addon1,addon2, ...
 EOF
 }
 
+# odoo instance version
+VERSION=
 # directory prefix
 PREFIX=
 # database name
@@ -36,9 +35,12 @@ ADDONS=
 # install this separately; see below.
 
 # parse for arguments
-while getopts "d:t:i:u:ch" OPTION
+while getopts "v:d:t:i:u:ch" OPTION
 do
     case $OPTION in
+        v)
+            VERSION=$OPTARG
+            ;;
         d)
             DATABASE=$OPTARG
                         # check prefix for testing environments
@@ -71,6 +73,12 @@ then
     exit 1
 fi
 
+# You need create the enviroment variable CLIENT with the project's name
+if [[ -z "$CLIENT" ]]; then
+  echo "Enviroment variable CLIENT with the project's name not found in the system"
+  exit 2
+fi
+
 # taken from https://get.docker.com/
 semverParse() {
     major="${1%%.*}"
@@ -83,22 +91,22 @@ semverParse() {
 # do the work
 case $TASK in
     "up")
-        cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
+        cd /$PREFIX$CLIENT-$VERSION && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
         ;;
     "down")
-        cd /$PREFIX$CLIENT-$version && docker-compose down
+        cd /$PREFIX$CLIENT-$VERSION && docker-compose down
         ;;
     "restart")
-        cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml restart odoo
+        cd /$PREFIX$CLIENT-$VERSION && docker-compose -f $DATABASE.yaml restart odoo
         ;;
     "rebuild")
-        cd /$PREFIX$CLIENT-$version && docker-compose -f $DATABASE.yaml build --no-cache && docker-compose down && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
+        cd /$PREFIX$CLIENT-$VERSION && docker-compose -f $DATABASE.yaml build --no-cache && docker-compose down && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
         ;;
     "install")
-        cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -i $ADDONS --stop-after-init
+        cd /$PREFIX$CLIENT-$VERSION && docker-compose run --rm odoo odoo -i $ADDONS --stop-after-init
         ;;
     "update")
-        cd /$PREFIX$CLIENT-$version && docker-compose run --rm odoo odoo -u $ADDONS --stop-after-init
+        cd /$PREFIX$CLIENT-$VERSION && docker-compose run --rm odoo odoo -u $ADDONS --stop-after-init
         ;;
     "prune")
         docker_version="$(docker -v | cut -d ' ' -f3 | cut -d ',' -f1)"
