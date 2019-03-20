@@ -12,7 +12,7 @@ SYNOPSIS
 COMMAND-LINE OPTIONS:
    -v   Odoo Major Version (10, 11, 12, ...)
    -d   Database name used in the instance. 
-   -t   Maintenance task to be executed: (up|down|restart|rebuild|prune)
+   -t   Maintenance task to be executed: (up|down|reload|restart|rebuild|prune)
    -i   Install addons. For installing more than one addon at once use \
 the addon name separated by a comma: -i addon1,addon2, ...
    -u   Update addons. For updating more than one addon at once use \
@@ -43,11 +43,11 @@ do
             ;;
         d)
             DATABASE=$OPTARG
-                        # check prefix for testing environments
-                        if [ $DATABASE == "test" ]
-                        then
-                            PREFIX="test-"
-                        fi
+           # check prefix for testing environments
+           if [ $DATABASE == "test" ]
+           then
+               PREFIX="test-"
+            fi
             ;;
         t)
             TASK=$OPTARG
@@ -95,6 +95,9 @@ case $TASK in
         ;;
     "down")
         cd /$PREFIX$CLIENT-$VERSION && docker-compose down
+        ;;
+    "reload")
+        cd /$PREFIX$CLIENT-$VERSION && docker-compose down && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
         ;;
     "restart")
         cd /$PREFIX$CLIENT-$VERSION && docker-compose -f $DATABASE.yaml restart odoo
