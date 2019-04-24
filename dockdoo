@@ -94,22 +94,22 @@ case $TASK in
         cd /$PREFIX$CLIENT-$VERSION && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
         ;;
     "down")
-        cd /$PREFIX$CLIENT-$VERSION && docker-compose down
+        cd /$PREFIX$CLIENT-$VERSION && docker-compose -f $DATABASE.yaml down
         ;;
     "reload")
-        cd /$PREFIX$CLIENT-$VERSION && docker-compose down && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
+        cd /$PREFIX$CLIENT-$VERSION && docker-compose -f $DATABASE.yaml down && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
         ;;
     "restart")
         cd /$PREFIX$CLIENT-$VERSION && docker-compose -f $DATABASE.yaml restart odoo
         ;;
     "rebuild")
-        cd /$PREFIX$CLIENT-$VERSION && docker-compose -f $DATABASE.yaml build --no-cache && docker-compose down && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
+        cd /$PREFIX$CLIENT-$VERSION && docker-compose -f $DATABASE.yaml build --no-cache && docker-compose -f $DATABASE.yaml up --build --remove-orphans -d
         ;;
     "install")
-        cd /$PREFIX$CLIENT-$VERSION && docker-compose run --rm odoo odoo -i $ADDONS --stop-after-init
+        cd /$PREFIX$CLIENT-$VERSION && docker-compose -f $DATABASE.yaml run --rm odoo odoo -i $ADDONS --stop-after-init
         ;;
     "update")
-        cd /$PREFIX$CLIENT-$VERSION && docker-compose run --rm odoo odoo -u $ADDONS --stop-after-init
+        cd /$PREFIX$CLIENT-$VERSION && docker-compose -f $DATABASE.yaml run --rm odoo odoo -u $ADDONS --stop-after-init
         ;;
     "prune")
         docker_version="$(docker -v | cut -d ' ' -f3 | cut -d ',' -f1)"
